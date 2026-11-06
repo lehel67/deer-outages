@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Cím hozzáadása",
+        "description": "A Distribuție Energie Electrică Romania (DEER) tervezett áramszünetei és üzemzavarai egy címre szűrve. A települést írhatod románul vagy magyarul is (pl. Târgu Secuiesc vagy Kézdivásárhely). Ha az utcákat üresen hagyod, az egész település leállásait figyeli.",
+        "data": {
+          "county": "Megye",
+          "locality": "Település",
+          "streets": "Utcák (nem kötelező, vesszővel elválasztva)"
+        },
+        "data_description": {
+          "streets": "Például: Gábor Áron, Ady Endre. Az egész települést vagy körzetet érintő leállásokat mindig mutatja."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nem érhető el a DEER áramszünet-adatforrása.",
+      "locality_required": "Add meg a települést."
+    },
+    "abort": {
+      "already_configured": "Ez a cím már be van állítva."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Utcák",
+        "description": "Hagyd üresen, ha az egész települést figyelnéd.",
+        "data": {
+          "streets": "Utcák (nem kötelező, vesszővel elválasztva)"
+        },
+        "data_description": {
+          "streets": "Például: Gábor Áron, Ady Endre. Az egész települést vagy körzetet érintő leállásokat mindig mutatja."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_outage": {
+        "name": "Következő áramszünet"
+      }
+    },
+    "binary_sensor": {
+      "outage_now": {
+        "name": "Áramszünet most"
+      }
+    },
+    "calendar": {
+      "outages": {
+        "name": "Áramszünetek"
+      }
+    }
+  }
+}

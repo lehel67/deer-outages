@@ -1,0 +1,102 @@
+"""Tests for parsing and matching the feed."""
+
+from __future__ import annotations
+
+from datetime import timedelta
+from zoneinfo import ZoneInfo
+
+from custom_components.deer_outages.outages import (
+    TYPE_INCIDENT,
+    normalize,
+    normalize_locality,
+    parse_incidents,
+    parse_planned,
+    select,
+    split_streets,
+)
+
+from .conftest import load
+
+TZ = ZoneInfo("Europe/Bucharest")
+
+
+def _all():
+    return parse_planned(load("scheduled.json"), TZ) + parse_incidents(
+        load("incidents.json"), TZ, timedelta(hours=2)
+    )
+
+
+def test_normalize() -> None:
+    """Accents, punctuation and shorthands do not matter."""
+    assert normalize("Tg. Secuiesc") == "TARGU SECUIESC"
+    assert normalize("TÂRGU-SECUIESC") == "TARGU SECUIESC"
+    assert normalize("Gábor Áron") == "GABOR ARON"
+    assert normalize("Ștefan cel Mare") == "STEFAN CEL MARE"
+    assert normalize_locality("Kézdivásárhely") == "TARGU SECUIESC"
+    assert normalize_locality("Sepsiszentgyörgy") == "SFANTU GHEORGHE"
+    assert split_streets("Gábor Áron, Ady Endre;\nKossuth Lajos,") == [
+        "Gábor Áron",
+        "Ady Endre",
+        "Kossuth Lajos",
+    ]
+
+
+def test_parse_planned() -> None:
+    """Rows of one work become one outage with every street once."""
+    planned = parse_planned(load("scheduled.json"), TZ)
+    work = next(o for o in planned if o.work_id == "50001")
+    assert [p.text for p in work.places] == [
+        "TARGU SECUIESC, Strada GABOR ARON",
+        "TARGU SECUIESC, Strada ADY ENDRE",
+    ]
+    assert work.start.isoformat() == "2026-11-06T10:00:00+02:00"
+    assert work.end.isoformat() == "2026-11-06T14:00:00+02:00"
+    assert work.duration == "4h : 0'"
+    assert not work.places[0].is_area
+
+    village = next(o for o in planned if o.work_id == "45684")
+    assert village.places[0].locality == "LIVEZILE IZVOARELE"
+    assert village.places[0].is_area
+    zone = next(o for o in planned if o.work_id == "50003")
+    assert zone.places[0].is_area
+
+
+def test_parse_incidents() -> None:
+    """Incident addresses are split per line, a missing end gets a default."""
+    incident = next(
+        o for o in parse_incidents(load("incidents.json"), TZ, timedelta(hours=2))
+        if o.work_id == "70001"
+    )
+    assert incident.kind == TYPE_INCIDENT
+    assert not incident.end_known
+    assert incident.end - incident.start == timedelta(hours=2)
+    assert [(p.locality, p.detail) for p in incident.places] == [
+        ("TARGU SECUIESC TARGU SECUIESC", "Strada GABOR ARON"),
+        ("TARGU SECUIESC TARGU SECUIESC", "Strada KOSSUTH LAJOS"),
+    ]
+
+
+def test_select_street() -> None:
+    """A street matches its lines, zones of the town, never other towns."""
+    found = select(_all(), "Covasna", "Kézdivásárhely", ["Gábor Áron"])
+    assert {(o.work_id, tuple(p.text for p in places)) for o, places in found} == {
+        ("50001", ("TARGU SECUIESC, Strada GABOR ARON",)),
+        ("50003", ("TARGU SECUIESC, ZONA PT 7 FABRICII",)),
+        ("70001", ("Loc: TARGU SECUIESC, Sat: TARGU SECUIESC, Str.: GABOR ARON",)),
+    }
+
+
+def test_select_whole_locality() -> None:
+    """Without streets every outage of the locality matches."""
+    found = select(_all(), "Covasna", "Târgu Secuiesc", [])
+    assert sorted(o.work_id for o, _ in found) == ["50001", "50002", "50003", "70001"]
+    # A word inside another name does not match: "Aron" is not "Gabor Aron Street 5".
+    assert select(_all(), "Covasna", "Targu Secuiesc", ["Curtea"])[0][0].work_id in {
+        "50002",
+        "50003",
+    }
+
+
+def test_select_other_county() -> None:
+    """The county has to match too."""
+    assert select(_all(), "Harghita", "Targu Secuiesc", []) == []

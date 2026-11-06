@@ -1,0 +1,28 @@
+[
+ {
+  "id": "91470",
+  "judet": "CLUJ",
+  "localitate": null,
+  "sat": null,
+  "tipArtera": null,
+  "artera": null,
+  "numar": null,
+  "bloc": null,
+  "adresa": "Loc: CLUJ-NAPOCA, Strada: VALEA GARBAULUI, Nr: 1",
+  "dataStart": "06/11/2026 20:14",
+  "dataStop": "06/11/2026 21:14"
+ },
+ {
+  "id": "70001",
+  "judet": "COVASNA",
+  "localitate": null,
+  "sat": null,
+  "tipArtera": null,
+  "artera": null,
+  "numar": null,
+  "bloc": null,
+  "adresa": "Loc: TARGU SECUIESC, Sat: TARGU SECUIESC, Str.: GABOR ARON<br />Loc: TARGU SECUIESC, Sat: TARGU SECUIESC, Str.: KOSSUTH LAJOS",
+  "dataStart": "06/11/2026 11:30",
+  "dataStop": ""
+ }
+]
