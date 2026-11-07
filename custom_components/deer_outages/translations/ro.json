@@ -40,6 +40,9 @@
     "sensor": {
       "next_outage": {
         "name": "Următoarea întrerupere"
+      },
+      "upcoming_outages": {
+        "name": "Întreruperi următoare"
       }
     },
     "binary_sensor": {

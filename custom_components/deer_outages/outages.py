@@ -83,6 +83,13 @@ class Place:
     locality: str
     detail: str
     text: str
+    # Every locality name the line mentions: commune, town and villages.
+    localities: list[str] = field(default_factory=list)
+
+    def is_in(self, wanted_locality: str) -> bool:
+        """Return if the line is in the locality (already normalized)."""
+        names = self.localities or [self.locality]
+        return any(_contains_words(normalize(name), wanted_locality) for name in names)
 
     @property
     def is_area(self) -> bool:
@@ -119,7 +126,7 @@ class Outage:
         wanted_streets = [normalize(street) for street in streets if normalize(street)]
         found: list[Place] = []
         for place in self.places:
-            if not _contains_words(normalize(place.locality), wanted_locality):
+            if not place.is_in(wanted_locality):
                 continue
             if not wanted_streets or place.is_area:
                 found.append(place)
@@ -138,14 +145,27 @@ def _county_of(record: dict[str, Any]) -> str:
 
 
 def _split_planned(text: str) -> Place:
-    """Split "LOCALITY, rest" from a planned outage."""
-    locality, _, detail = text.partition(",")
-    detail = detail.strip()
-    # "LIVEZILE, IZVOARELE(LIVEZILE), Sat ..." names the village before the "(".
-    village = re.match(r"^([^,(]+)\([^)]*\)\s*,", detail)
-    if village:
-        locality = f"{locality} {village.group(1)}"
-    return Place(locality=locality.strip(), detail=detail, text=" ".join(text.split()))
+    """Split "COMMUNE, VILLAGE, address" from a planned outage.
+
+    The first part is the town or commune. Parts between it and the last one
+    name villages, sometimes as "VILLAGE(COMMUNE)". The last part is the street,
+    "Localitate", "Sat ..." or "ZONA ...".
+    """
+    segments = [segment.strip() for segment in text.split(",")]
+    locality = segments[0]
+    detail = ", ".join(segments[1:])
+    localities = [locality]
+    for segment in segments[1:-1]:
+        localities.extend(
+            name.strip() for name in re.split(r"[()]", segment) if name.strip()
+        )
+    localities = list(dict.fromkeys(localities))
+    return Place(
+        locality=" ".join(localities),
+        detail=detail,
+        text=" ".join(text.split()),
+        localities=localities,
+    )
 
 
 def _split_incident(text: str) -> Place:
@@ -155,14 +175,18 @@ def _split_incident(text: str) -> Place:
         name, sep, value = chunk.partition(":")
         if sep:
             parts[normalize(name)] = value.strip()
-    locality = " ".join(
-        value for value in (parts.get("LOC"), parts.get("SAT")) if value
-    )
+    localities = [value for value in (parts.get("LOC"), parts.get("SAT")) if value]
+    locality = " ".join(localities)
     street = parts.get("STRADA") or ""
     detail = f"Strada {street}" if street else ""
     if number := parts.get("NR"):
         detail = f"{detail} {number}".strip()
-    return Place(locality=locality, detail=detail, text=" ".join(text.split()))
+    return Place(
+        locality=locality,
+        detail=detail,
+        text=" ".join(text.split()),
+        localities=localities,
+    )
 
 
 def parse_planned(records: list[dict[str, Any]], tz: tzinfo) -> list[Outage]:

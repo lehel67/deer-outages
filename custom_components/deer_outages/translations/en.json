@@ -40,6 +40,9 @@
     "sensor": {
       "next_outage": {
         "name": "Next power outage"
+      },
+      "upcoming_outages": {
+        "name": "Upcoming power outages"
       }
     },
     "binary_sensor": {

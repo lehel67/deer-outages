@@ -40,6 +40,9 @@
     "sensor": {
       "next_outage": {
         "name": "Következő áramszünet"
+      },
+      "upcoming_outages": {
+        "name": "Közelgő áramszünetek"
       }
     },
     "binary_sensor": {

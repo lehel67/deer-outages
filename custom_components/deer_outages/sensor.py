@@ -5,12 +5,17 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import DeerConfigEntry, outage_text
 from .entity import DeerEntity
+from .outages import TYPE_INCIDENT, TYPE_PLANNED
 
 
 async def async_setup_entry(
@@ -19,7 +24,12 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the sensors."""
-    async_add_entities([DeerNextOutageSensor(entry.runtime_data)])
+    async_add_entities(
+        [
+            DeerNextOutageSensor(entry.runtime_data),
+            DeerUpcomingCountSensor(entry.runtime_data),
+        ]
+    )
 
 
 class DeerNextOutageSensor(DeerEntity, SensorEntity):
@@ -60,3 +70,34 @@ class DeerNextOutageSensor(DeerEntity, SensorEntity):
                 }
             )
         return attributes
+
+
+class DeerUpcomingCountSensor(DeerEntity, SensorEntity):
+    """How many outages at the address are going on or still to come; 0 if none."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, "upcoming_outages")
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of outages that are not over."""
+        return len(self.coordinator.upcoming())
+
+    @property
+    def icon(self) -> str:
+        """Show a crossed tower while there is anything to know about."""
+        return "mdi:transmission-tower-off" if self.native_value else "mdi:transmission-tower"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the split between planned outages and incidents."""
+        upcoming = self.coordinator.upcoming()
+        return {
+            "planned": sum(1 for m in upcoming if m.outage.kind == TYPE_PLANNED),
+            "incidents": sum(1 for m in upcoming if m.outage.kind == TYPE_INCIDENT),
+            "now": len(self.coordinator.current()),
+            **self._common_attributes,
+        }

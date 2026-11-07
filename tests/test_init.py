@@ -50,7 +50,8 @@ async def test_entities(
     assert entry.state is ConfigEntryState.LOADED
     ids = sorted(hass.states.async_entity_ids())
     now_id = next(i for i in ids if i.startswith("binary_sensor."))
-    next_id = next(i for i in ids if i.startswith("sensor."))
+    next_id = next(i for i in ids if i.endswith("kovetkezo_aramszunet"))
+    count_id = next(i for i in ids if i.endswith("kozelgo_aramszunetek"))
     cal_id = next(i for i in ids if i.startswith("calendar."))
 
     state = hass.states.get(now_id)
@@ -62,6 +63,12 @@ async def test_entities(
     assert dt_util.parse_datetime(state.state) == _at("2026-11-06 10:00")
     assert state.attributes["count"] == 3
     assert state.attributes["addresses"] == ["TARGU SECUIESC, Strada GABOR ARON"]
+
+    state = hass.states.get(count_id)
+    assert state.state == "3"
+    assert state.attributes["planned"] == 2
+    assert state.attributes["incidents"] == 1
+    assert state.attributes["now"] == 2
 
     result = await hass.services.async_call(
         "calendar",
@@ -85,6 +92,23 @@ async def test_entities(
     await hass.async_block_till_done()
     assert hass.states.get(now_id).state == "off"
     assert dt_util.parse_datetime(hass.states.get(next_id).state) == _at("2026-11-12 08:00")
+    assert hass.states.get(count_id).state == "1"
+
+
+async def test_no_outages(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, entry: MockConfigEntry
+) -> None:
+    """With nothing planned the counter shows 0 instead of unknown."""
+    aioclient_mock.get(SCHEDULED_URL, json=[])
+    aioclient_mock.get(INCIDENTS_URL, json=[])
+    await _setup(hass, entry)
+    count = next(
+        hass.states.get(i)
+        for i in hass.states.async_entity_ids("sensor")
+        if i.endswith("kozelgo_aramszunetek")
+    )
+    assert count.state == "0"
+    assert count.attributes["icon"] == "mdi:transmission-tower"
 
 
 async def test_new_outage_event(
