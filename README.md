@@ -202,5 +202,3 @@ Event data: `message`, `type` (`planned` / `incident`), `start`, `end`, `start_u
 *Ez egy nem hivatalos, közösségi projekt, nincs kapcsolatban a Distribuție Energie Electrică Romania-val. / Proiect neoficial, neafiliat cu Distribuție Energie Electrică Romania. / Unofficial project, not affiliated with Distribuție Energie Electrică Romania.*
 
 *Közreműködők / Contributori / Contributors: [Konczei Lehel](https://github.com/lehel67), [Mihai Poenaru](https://github.com/poemihai) (közös lekérdezés, üzemzavar-kezelés, áramszünet vége szenzor, címmódosítás, diagnosztika, valódi falvas címek).*
-
-*A kód nagy részét Claude (Anthropic) segítségével írtuk. / Developed with the help of Claude (Anthropic).*
