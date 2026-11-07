@@ -17,7 +17,7 @@ Nem kell hozzá se fiók, se jelszó. A DEER nyilvános adatait olvassa, ugyanaz
 **HACS-szal (ajánlott)**
 
 1. HACS → jobb felül a három pont → **Egyéni tárolók** (Custom repositories).
-2. Tároló: `https://github.com/lehel67/ha-deer-outages`, típus: **Integráció**.
+2. Tároló: `https://github.com/lehel67/deer-outages`, típus: **Integráció**.
 3. Keresd meg a „DEER” integrációt, **Letöltés**, majd indítsd újra a Home Assistantot.
 
 **Kézzel:** másold a `custom_components/deer_outages` mappát a Home Assistant `config/custom_components/` mappájába, és indítsd újra.
@@ -71,7 +71,7 @@ Az esemény adatai: `message`, `type` (`planned` / `incident`), `start`, `end`, 
 
 Întreruperile programate și incidentele **Distribuție Energie Electrică Romania (DEER)** în Home Assistant, **filtrate pentru adresa ta**: senzor „întrerupere acum”, „următoarea întrerupere”, „întreruperi următoare” (0 când nu e nimic), calendar și un eveniment `deer_outages_new_outage` pentru notificări. Fără cont sau parolă; se folosesc datele publice afișate pe [pagina de întreruperi DEER](https://www.distributie-energie.ro/intreruperi-deer/).
 
-Instalare: HACS → Custom repositories → `https://github.com/lehel67/ha-deer-outages` (Integration), apoi **Setări → Dispozitive și servicii → Adaugă integrare → DEER**. Localitatea se poate scrie în română sau maghiară; străzile (opțional) se separă prin virgulă.
+Instalare: HACS → Custom repositories → `https://github.com/lehel67/deer-outages` (Integration), apoi **Setări → Dispozitive și servicii → Adaugă integrare → DEER**. Localitatea se poate scrie în română sau maghiară; străzile (opțional) se separă prin virgulă.
 
 ---
 
@@ -79,10 +79,9 @@ Instalare: HACS → Custom repositories → `https://github.com/lehel67/ha-deer-
 
 Planned power outages and incidents of **Distribuție Energie Electrică Romania (DEER)** in Home Assistant, **filtered for your address**: an "outage now" binary sensor, a "next outage" timestamp sensor, an "upcoming outages" counter (0 when there is nothing), a calendar, and a `deer_outages_new_outage` event for notifications. No account needed; it reads the public data shown on the [DEER outage page](https://www.distributie-energie.ro/intreruperi-deer/).
 
-Install with HACS (Custom repositories → `https://github.com/lehel67/ha-deer-outages`, type Integration) or copy `custom_components/deer_outages` into your config folder, restart, then add **DEER** under Settings → Devices & services. Localities can be typed in Romanian or Hungarian; streets are optional and comma separated.
+Install with HACS (Custom repositories → `https://github.com/lehel67/deer-outages`, type Integration) or copy `custom_components/deer_outages` into your config folder, restart, then add **DEER** under Settings → Devices & services. Localities can be typed in Romanian or Hungarian; streets are optional and comma separated.
 
 ---
 
 *Ez egy nem hivatalos, közösségi projekt, nincs kapcsolatban a Distribuție Energie Electrică Romania-val. / Proiect neoficial, neafiliat cu Distribuție Energie Electrică Romania. / Unofficial project, not affiliated with Distribuție Energie Electrică Romania.*
 
-*A kód nagy részét Claude (Anthropic) segítségével írtuk. / Developed with the help of Claude (Anthropic).*
