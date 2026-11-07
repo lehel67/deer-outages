@@ -5,9 +5,9 @@
     "@lehel67"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/lehel67/ha-deer-outages",
+  "documentation": "https://github.com/lehel67/deer-outages",
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "version": "0.1.1",
-  "issue_tracker": "https://github.com/lehel67/ha-deer-outages/issues"
+  "version": "0.2.0",
+  "issue_tracker": "https://github.com/lehel67/deer-outages/issues"
 }

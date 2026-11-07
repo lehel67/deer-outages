@@ -5,17 +5,26 @@ Kept free of Home Assistant objects so it is easy to test.
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, tzinfo
-import re
 from typing import Any
-import unicodedata
 
 TYPE_PLANNED = "planned"
 TYPE_INCIDENT = "incident"
 
 _ABBREVIATIONS = {"TG": "TARGU", "SF": "SFANTU", "SFT": "SFANTU", "STR": "STRADA"}
-_STREET_WORDS = {"STRADA", "STRADA:", "ALEEA", "BULEVARDUL", "BD", "CALEA", "PIATA"}
+_STREET_WORDS = {
+    "STRADA",
+    "STRADA:",
+    "ALEEA",
+    "BULEVARDUL",
+    "BD",
+    "CALEA",
+    "CALE",
+    "PIATA",
+}
 # Markers in a planned outage address that it covers more than single streets.
 _AREA_MARKERS = ("LOCALITATE", "SAT", "ZONA", "PT")
 _BR = re.compile(r"<br\s*/?>", re.IGNORECASE)
@@ -95,8 +104,10 @@ class Place:
     def is_area(self) -> bool:
         """Return if the line covers a whole locality, village or zone."""
         words = normalize(self.detail).split()
-        return not words or words[0] in _AREA_MARKERS or (
-            not any(word in _STREET_WORDS for word in words)
+        return (
+            not words
+            or words[0] in _AREA_MARKERS
+            or (not any(word in _STREET_WORDS for word in words))
         )
 
 
@@ -144,25 +155,34 @@ def _county_of(record: dict[str, Any]) -> str:
     return county
 
 
-def _split_planned(text: str) -> Place:
-    """Split "COMMUNE, VILLAGE, address" from a planned outage.
+def _is_address_marker(value: str) -> bool:
+    """Return if a part of the address is a street or an area marker, not a village."""
+    words = normalize(value).split()
+    return not words or words[0] in _STREET_WORDS or words[0] in _AREA_MARKERS
 
-    The first part is the town or commune. Parts between it and the last one
-    name villages, sometimes as "VILLAGE(COMMUNE)". The last part is the street,
-    "Localitate", "Sat ..." or "ZONA ...".
+
+def _split_planned(text: str) -> Place:
+    """Split "COMMUNE, VILLAGE, ..., address" from a planned outage.
+
+    The first part is the town or commune. The parts after it, up to the first
+    one that starts with a street or area marker, name villages, sometimes as
+    "VILLAGE(COMMUNE)". The rest is kept as written, since house numbers can
+    contain commas too ("Strada REVOLUTIEI 49,51").
     """
-    segments = [segment.strip() for segment in text.split(",")]
-    locality = segments[0]
-    detail = ", ".join(segments[1:])
-    localities = [locality]
-    for segment in segments[1:-1]:
+    commune, _, rest = text.partition(",")
+    localities = [commune.strip()]
+    while True:
+        village = re.match(r"\s*([^,]+),", rest)
+        if village is None or _is_address_marker(village.group(1)):
+            break
         localities.extend(
-            name.strip() for name in re.split(r"[()]", segment) if name.strip()
+            name.strip() for name in re.split(r"[()]", village.group(1)) if name.strip()
         )
+        rest = rest[village.end() :]
     localities = list(dict.fromkeys(localities))
     return Place(
         locality=" ".join(localities),
-        detail=detail,
+        detail=rest.strip(" ,"),
         text=" ".join(text.split()),
         localities=localities,
     )

@@ -1,1 +1,4 @@
 pytest-homeassistant-custom-component
+freezegun
+pytest-cov
+pytest-timeout
