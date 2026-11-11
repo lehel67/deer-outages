@@ -185,3 +185,45 @@ def test_village_names() -> None:
     assert [o.work_id for o, _ in select(outages, "Buzau", "Valea Sălciilor", [])] == ["1"]
     assert [o.work_id for o, _ in select(outages, "Buzau", "Pogoanele", [])] == ["1"]
     assert [o.work_id for o, _ in select(outages, "Buzau", "Pogoanele", ["Principala"])] == ["1"]
+
+
+def test_old_spelling_matches() -> None:
+    """The old spelling with î ("TIRGU SECUIESC") matches Târgu Secuiesc."""
+    records = [
+        {
+            "id": "74733",
+            "judet": "COVASNA",
+            "localitate": None,
+            "adresa": "Loc: TIRGU SECUIESC, Strada: 1 DECEMBRIE 1918<br />"
+            "Loc: TIRGU SECUIESC, Strada: FABRICILOR",
+            "dataStart": "11/11/2026 17:06",
+            "dataStop": "",
+        }
+    ]
+    outages = parse_incidents(records, TZ, timedelta(hours=2))
+    assert len(select(outages, "Covasna", "Târgu Secuiesc", [])) == 1
+    assert len(select(outages, "Covasna", "Kézdivásárhely", [])) == 1
+    found = select(outages, "Covasna", "Târgu Secuiesc", ["Fabricilor"])
+    assert [p.detail for p in found[0][1]] == ["Strada FABRICILOR"]
+    assert select(outages, "Covasna", "Târgu Secuiesc", ["Gábor Áron"]) == []
+    assert select(outages, "Covasna", "Târgu Mureș", []) == []
+
+
+def test_incident_square_and_courtyard_are_not_whole_town() -> None:
+    """A "Piata:" or "Curte:" line is one place, not the whole locality."""
+    records = [
+        {
+            "id": "74730",
+            "judet": "COVASNA",
+            "adresa": "Loc: TIRGU SECUIESC, Piata: PIATA GABOR ARON<br />"
+            "Loc: TIRGU SECUIESC, Curte: CURTEA 70",
+            "dataStart": "11/11/2026 17:06",
+            "dataStop": "",
+        }
+    ]
+    outages = parse_incidents(records, TZ, timedelta(hours=2))
+    assert select(outages, "Covasna", "Târgu Secuiesc", ["Fabricilor"]) == []
+    found = select(outages, "Covasna", "Târgu Secuiesc", ["Gábor Áron"])
+    assert [p.detail for p in found[0][1]] == ["Piata PIATA GABOR ARON"]
+    found = select(outages, "Covasna", "Târgu Secuiesc", ["Curtea 70"])
+    assert [p.detail for p in found[0][1]] == ["Curte CURTEA 70"]

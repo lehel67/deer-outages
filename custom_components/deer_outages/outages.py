@@ -24,6 +24,8 @@ _STREET_WORDS = {
     "CALEA",
     "CALE",
     "PIATA",
+    "CURTE",
+    "CURTEA",
 }
 # Markers in a planned outage address that it covers more than single streets.
 _AREA_MARKERS = ("LOCALITATE", "SAT", "ZONA", "PT")
@@ -70,9 +72,19 @@ def normalize(text: str | None) -> str:
     return " ".join(_ABBREVIATIONS.get(word, word) for word in words)
 
 
+def _fold(text: str) -> str:
+    """Treat A and I as the same letter when comparing names.
+
+    Romanian â and î are the same sound, and the feed still often uses the old
+    spelling: "TIRGU SECUIESC" for Târgu Secuiesc, "FINTINELE" for Fântânele.
+    Without accents these differ only in A and I.
+    """
+    return text.replace("I", "A")
+
+
 def _contains_words(haystack: str, needle: str) -> bool:
     """Return if the words of needle appear together in haystack."""
-    return bool(needle) and f" {needle} " in f" {haystack} "
+    return bool(needle) and f" {_fold(needle)} " in f" {_fold(haystack)} "
 
 
 def parse_time(value: Any, tz: tzinfo) -> datetime | None:
@@ -197,8 +209,12 @@ def _split_incident(text: str) -> Place:
             parts[normalize(name)] = value.strip()
     localities = [value for value in (parts.get("LOC"), parts.get("SAT")) if value]
     locality = " ".join(localities)
-    street = parts.get("STRADA") or ""
-    detail = f"Strada {street}" if street else ""
+    # The street part: "Strada: X", but also "Piata: X" or "Curte: CURTEA 39".
+    detail = ""
+    for key, value in parts.items():
+        if key not in {"LOC", "SAT", "NR"} and value:
+            detail = f"{key.title()} {value}"
+            break
     if number := parts.get("NR"):
         detail = f"{detail} {number}".strip()
     return Place(
